@@ -1,0 +1,17 @@
+#!/bin/bash
+export PATH=/Users/Mats/lithium/lib/otp_src_R13B03/bin:$PATH
+
+function run {
+    screen -X stuff "$1"
+    sleep 0.02
+}
+
+make 
+
+run $'\003'  
+run $'a\n'
+run $'make repl\n' 
+run $'(slurp \'\"lfeimage.lfe\")\n'
+run $"$(cat test)"
+run $'\n'
+

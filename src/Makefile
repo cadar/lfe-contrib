@@ -16,19 +16,19 @@ all: $(LFE_BEAM)
 
 %.beam: %.lfe
 	@erl $(OPT) -eval 'lfe_comp:file("$<").' -s erlang halt
+	@cp $< ../../$*.txt
 
-init: matrix.beam
-	@erl $(OPT) -s matrix init -s erlang halt
-start: matrix.beam
-	@erl $(OPT) -s matrix start -s erlang halt
+init: lfeimage.beam
+	@erl $(OPT) -eval 'io:format("~p~n",[lfeimage:init()]).' -s erlang halt
+start: lfeimage.beam
+	@erl $(OPT) -eval 'io:format("~p~n",[lfeimage:start()]).' -s erlang halt
 
 repl:
 	@erl $(OPT) -s lfe_boot start
- 
+
 clean:
-	@rm -rf $(LFE_BEAM) *.dump err out log *.beam ebin/*.beam tmp/*.lfe
+	@rm -rf $(LFE_BEAM) *.dump err out log *.beam ebin/*.beam esrc/*.lfe Mnesia.nonode@nohost 
 
 check-syntax: 
 	@erl $(OPT) -eval 'code:load_file(sup_comp).'  -eval 'lfe_comp:file("$(CHK_SOURCES)").' -s erlang halt
-
 
