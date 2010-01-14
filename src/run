@@ -5,11 +5,11 @@ function run {
     screen -X stuff "$1"
     sleep 0.02
 }
-
-make 
+make
 
 run $'\003'  
 run $'a\n'
+run $'clear\n'
 run $'make repl\n' 
 run $'(slurp \'\"lfeimage.lfe\")\n'
 run $"$(cat test)"

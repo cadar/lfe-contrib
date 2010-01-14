@@ -70,9 +70,12 @@
 ;;
 ;; 3a. no fun in db create with:
 ;;     (insert 
-;;     (defun XXX (x y) 
+;;       (defun XXX (x y) 
 ;;     ;; <Description>
-;;       (list 1 2 3 4 5))) 
+;;       (list 1 2 3 4 5))
+;;     -> (id 'aab234)
+;;  > (: aab234 XXX 23 4)
+;;  
 ;;  > (list 
 ;;  > (trace
 ;;  > (untrace
@@ -158,6 +161,10 @@
    (: lists flatten li)))
 
 (defun create (mod)
+  ;; get fun from mnesia
+  ;; create file
+  ;; compile
+  ;; test
   (let ((file (format '"esrc/~s.lfe" 
                       (list mod))))
     (: file write_file file 
@@ -200,39 +207,46 @@
          (load_file mod)
          (on_all_export mod fn_test))))))
 
-(defun init ()
-  (: mnesia create_schema 
-    (list (: erlang node))) 
-  (: mnesia start)
-  (: mnesia create_table 'funs 
-     (list 
-      (tuple 'disc_copies 
-             (list (: erlang node)))
-      (tuple 'attributes 
-            (record_info_fields_funs)))))
-
-(defun qq (ast)
-  (on_all_export 
-   'lists 
-   (lambda (mod f arity)
-     (andalso 
-      (== (call mod f '(1) '(3)) '(1 3))
-      (== (call mod f '(4) '(5)) '(4 5))))))
-
 (defun tests (li)
   (cons 'andalso 
         (: lists map 
           (lambda (a)
             (list '== 
                   (cons 'call 
-                        (cons 'mod 
-                              (cons 'f 
-                                    (hd  a))))
+                  (cons 'mod 
+                  (cons 'f 
+                        (hd  a))))
                   (hd (tl a))))
           li)))
+
+; (( ('(s) '(d)) '(f))) '(g)) '(e))
+; -> ('(e) '(g) '(f) '(s) '(d))
+
+(defmacro flat 
+  (((e1 . es1) . '()) `'(,@es1 ,@e1))
+  ((e . (e2 . '())) 
+   `(cons ',e2 (flat ,@e)))
+  ((e) '(done ,e)))
+
+  
+(defmacro tran 
+  ((e . ('-> . '())) `'(more args ,e))
+  ((e . ('-> . (e2 . '()))) 
+   `'(,e ,e2))
+  ((e . ('-> . (e2 . es)))
+   `(cons '(,e ,e2) (tran ,@es)))
+  ((e . (e2 . es)) 
+   `(tran (,e ,e2) ,@es))
+  ((e . '()) `'(miss ,e))
+  (e `'(error ,@e)))
+  
         
 ;; TODO transform to more user frendly
 ;;      input mode.
+;; TODO insert , versioning
+;; TODO list
+
+;(q ((('2 'x) '(x x))) 'lists)
 (defmacro q 
   ((t . '())  `(q ,t 'image))
   ((t . ((e . (mo . es)) . '()))
@@ -244,11 +258,33 @@
         '(insert ,mo (defun test () ,t)))))
   
 
+(defun qq (ast)
+  (on_all_export 
+   'lists 
+   (lambda (mod f arity)
+     (andalso 
+      (== (call mod f '(1) '(3)) '(1 3))
+      (== (call mod f '(4) '(5)) '(4 5))))))
+
+
+(defun init ()
+  (: mnesia create_schema 
+    (list (: erlang node))) 
+  (: mnesia start)
+  (: mnesia create_table 'funs 
+     (list 
+      (tuple 'disc_copies 
+             (list (: erlang node)))
+      (tuple 'attributes 
+            (record_info_fields_funs)))))
+
 (defun start ()
     (: mnesia start)
     (foreach (lambda (mod) 
                (qq mod))
              (list 'lists 'aaa123)))
+
+
 
 ;;; Local Variables: ***
 ;;; mode:lfe ***
