@@ -4,6 +4,7 @@
          (format 1)
          (format 2)) 
    (from lists 
+         (map 2)
          (foreach 2) 
          (any 2) 
          (keyfind 3) 
@@ -167,7 +168,8 @@
   '" (export (start 2)))" 10
   '"(defun start (x y) " 10 
   '";; main function" 10
-  '"(: io format '\"~p ~p.\" (list x y))" 10 
+  '"(: io format '\"~p ~p.\"" 10
+  '"(list x y))" 10 
   '"(: lists append x y)" 10 
   '")" 10
          )))
@@ -185,7 +187,7 @@
            ((tuple 'exports funcs) 
             (keyfind 'exports 1 
                      mod_info)))
-      (foreach
+      (map
         (lambda (fn) 
           (testfn fn_test mod fn))
         funcs))
@@ -197,11 +199,6 @@
          (comp file)
          (load_file mod)
          (on_all_export mod fn_test))))))
-
-;(defun test1 (mod f arity)
-;  (andalso (== arity 2)
-;           (== (call mod f '(1) '(2))
-;               '(1 2))))
 
 (defun init ()
   (: mnesia create_schema 
@@ -234,14 +231,18 @@
                   (hd (tl a))))
           li)))
         
-;; TODO default to module image.
-;; TODO submit searched version
 ;; TODO transform to more user frendly
 ;;      input mode.
-(defmacro q (m)
-  `(on_all_export 'lists 
-      (lambda (mod f arity)
-        ,(tests m))))
+(defmacro q 
+  ((t . '())  `(q ,t 'image))
+  ((t . ((e . (mo . es)) . '()))
+     `(if (any (lambda (x) (== x 'ok))
+               (on_all_export ',mo
+                              (lambda (mod f arity)
+                                ,(tests t))))
+        '(tuple 'ok ,mo)
+        '(insert ,mo (defun test () ,t)))))
+  
 
 (defun start ()
     (: mnesia start)
