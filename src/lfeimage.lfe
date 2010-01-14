@@ -5,6 +5,7 @@
          (format 2)) 
    (from lists 
          (map 2)
+         (reverse 1)
          (foreach 2) 
          (any 2) 
          (keyfind 3) 
@@ -219,24 +220,19 @@
                   (hd (tl a))))
           li)))
 
-; (( ('(s) '(d)) '(f))) '(g)) '(e))
-; -> ('(e) '(g) '(f) '(s) '(d))
 
-(defmacro flat 
-  (((e1 . es1) . '()) `'(,@es1 ,@e1))
-  ((e . (e2 . '())) 
-   `(cons ',e2 (flat ,@e)))
-  ((e) '(done ,e)))
-
-  
+(defmacro x 
+  (unit `(tran start ,@unit)))
 (defmacro tran 
   ((e . ('-> . '())) `'(more args ,e))
   ((e . ('-> . (e2 . '()))) 
-   `'(,e ,e2))
+   `(cons '(,(reverse e) ,e2) '()))
   ((e . ('-> . (e2 . es)))
-   `(cons '(,e ,e2) (tran ,@es)))
+   `(cons '(,(reverse e) ,e2) (tran start ,@es)))
+  (('start . (e . es))
+   `(tran (,e )     ,@es))
   ((e . (e2 . es)) 
-   `(tran (,e ,e2) ,@es))
+   `(tran (,e2 ,@e) ,@es))
   ((e . '()) `'(miss ,e))
   (e `'(error ,@e)))
   
