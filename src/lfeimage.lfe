@@ -143,19 +143,19 @@
 (defmacro record_info_fields_tests () 
   `',(name_only (def_record_tests)))
 
-;--------------------
+;-------------------------------------
 
 (defun testfn (test_fn mod func)
-  (let (((tuple fn ar) func))
-    (try
-      (let ((res 
-             (apply test_fn 
-                    (list mod fn ar))))
-        (if res 
-          (: io format '"~p:~p/~p~n" 
-             (list mod fn ar))))
-      (catch 
-        ((tuple _ n o) (tuple n))))))
+  (try
+    (let* (((tuple fn ar) func)
+           (res 
+            (apply test_fn 
+                   (list mod fn ar))))
+      (if res 
+        (: io format '"~p:~p/~p~n" 
+           (list mod fn ar))))
+    (catch 
+      ((tuple _ n o) (tuple n)))))
 
 (defun l2bin (li)
   (list_to_binary
@@ -207,62 +207,39 @@
          (comp file)
          (load_file mod)
          (on_all_export mod fn_test))))))
+;;------------------------------------
 
-(defun tests (li)
-  (cons 'andalso 
-        (: lists map 
-          (lambda (a)
-            (list '== 
-                  (cons 'call 
-                  (cons 'mod 
-                  (cons 'f 
-                        (hd  a))))
-                  (hd (tl a))))
-          li)))
+(defun query (mod x)
+  (on_all_export mod (eval x)))
 
-
-(defmacro x 
+(defmacro where 
   (unit `(tran start ,@unit)))
 (defmacro tran 
-  ((e . ('-> . '())) `'(more args ,e))
-  ((e . ('-> . (e2 . '()))) 
-   `(cons '(,(reverse e) ,e2) '()))
-  ((e . ('-> . (e2 . es)))
-   `(cons '(,(reverse e) ,e2) (tran start ,@es)))
-  (('start . (e . es))
-   `(tran (,e )     ,@es))
-  ((e . (e2 . es)) 
-   `(tran (,e2 ,@e) ,@es))
-  ((e . '()) `'(miss ,e))
-  (e `'(error ,@e)))
-  
-        
-;; TODO transform to more user frendly
-;;      input mode.
-;; TODO insert , versioning
-;; TODO list
+   ((e . ('-> . '())) `'(more_arg ,e))
+   ((e . ('-> . (e2 . '()))) 
+   `(cons (list '== 
+                '(call mod f 
+                   ,@(reverse e)) 
+                ',e2) 
+          '()))
+   ((e . ('-> . (e2 . es)))
+   `(cons (list '== 
+                '(call mod f 
+                   ,@(reverse e)) 
+                ',e2) 
+          (tran restart ,@es)))
+   (('start . (e . es))
+    `(list 'lambda '(mod f arity) 
+           (cons 'andalso 
+                 (tran (,e ) ,@es))))
+   (('restart . (e . es))
+    `(tran (,e )     ,@es))
+   ((e . (e2 . es)) 
+    `(tran (,e2 ,@e) ,@es))
+   ((e . '()) `'(miss ,e))
+   (e `'(error ,@e)))
 
-;(q ((('2 'x) '(x x))) 'lists)
-(defmacro q 
-  ((t . '())  `(q ,t 'image))
-  ((t . ((e . (mo . es)) . '()))
-     `(if (any (lambda (x) (== x 'ok))
-               (on_all_export ',mo
-                              (lambda (mod f arity)
-                                ,(tests t))))
-        '(tuple 'ok ,mo)
-        '(insert ,mo (defun test () ,t)))))
-  
-
-(defun qq (ast)
-  (on_all_export 
-   'lists 
-   (lambda (mod f arity)
-     (andalso 
-      (== (call mod f '(1) '(3)) '(1 3))
-      (== (call mod f '(4) '(5)) '(4 5))))))
-
-
+;;------------------------------------
 (defun init ()
   (: mnesia create_schema 
     (list (: erlang node))) 
@@ -274,10 +251,19 @@
       (tuple 'attributes 
             (record_info_fields_funs)))))
 
+(defun qq (ast)
+  (on_all_export 
+   'lists 
+   (lambda (mod f arity)
+     (andalso 
+      (== (call mod f '(1) '(3)) '(1 3))
+      (== (call mod f '(4) '(5)) '(4 5))))))
+
 (defun start ()
     (: mnesia start)
     (foreach (lambda (mod) 
-               (qq mod))
+               (qq mod)
+               )
              (list 'lists 'aaa123)))
 
 
