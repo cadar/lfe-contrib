@@ -32,21 +32,43 @@
   (: lists map (lambda (x) 
                  (list 'quote x))
      li))
+; (lambda (mod1 f doc)
+;    (if doc ; return doc-string
+;      (list '== (cons ': (cons mod1 (cons f '(2 'x2)))) 
+;              ''(x x))
+;      (let* ((val (call mod1 f 2 'x)) 
+;             (res (== val '(x x)))) 
+;       (if res 
+;           res 
+;           val)))))
 (defun get_perm (args out)
-  (: lists map (lambda (a)
-             (list 'list ''lambda ''(mod1 f doc) 
-                 (list 'list ''if ''doc 
-                 (list 'quote  
-                 (list 'tuple (list 'quote  out )
-                 (list 'cons ''==  
-                 (list 'cons 'f  
-                 (list 'quote a)))))
-             (list 'list ''== 
-             (cons  'list 
-             (cons ''call 
-             (cons ''mod1 
-             (cons ''f (add_quote a)))))
-             (list 'quote out)))))
+  (: lists map 
+    (lambda (a)
+      (list 'list ''lambda ''(mod1 f doc) 
+            ; If doc is true return test
+            ; description.
+            (list 'list ''if ''doc 
+                 (list 'quote 
+                 (list 'list ''==  
+                 (list 'cons '':
+                 (list 'cons 'mod1 
+                 (list 'cons 'f 
+                 (list 'quote a))))
+                 (list 'quote  out )))
+
+         (list 'list ''let* 
+          (list 'list 
+           (list 'list ''val  ; pre-calculate
+            (cons 'list 
+            (cons ''call 
+            (cons ''mod1 
+            (cons ''f (add_quote a))))))
+           (list 'list ''res 
+            (list 'list ''== ''val
+            (list 'quote out)))) 
+           (list 'list ''if ''res 
+                 ''res 
+                 ''val))))) 
      (perms args)))
 (defun ext_list(args out)
    (cons 'list (cons ''list (get_perm args out))))
@@ -61,7 +83,7 @@
            '()))
    ((e . (''-> . (e2 . es)))
     `(cons ,(ext_list e e2)
-         (trans restart ,@es)))
+           (trans restart ,@es)))
    (('start . (e . es))
     `(cons 'list (trans (,e ) ,@es)))
    (('restart . (e . es))
@@ -80,13 +102,21 @@
     (on_all_export mod (: lists flatten (eval x))
                    (fun err_handler 1))))
 
-(defun fi (key li)
+(defun filter (key li)
   (if (== li '()) '()
       (let* ((head (hd li))
-             ((tuple status c v b) head))
+             ((tuple status _ _ ) head))
         (if (== status key)
-          (cons head (fi key (tl li)))
-          (fi key (tl li))))))
+          (cons head (filter key (tl li)))
+          (filter key (tl li))))))
+
+(defun delete (key li)
+  (if (== li '()) '()
+      (let* ((head (hd li))
+             ((tuple status _ _ ) head))
+        (if (/= status key)
+          (cons head (delete key (tl li)))
+          (delete key (tl li))))))
 
 
 (defun on_all_export (mod fn_test handler)
@@ -100,12 +130,12 @@
             (lc ((<- te fn_test)      
                  (<- fn funcs))
               (testfn te mod fn)))
-           (ok (fi 'ok res_li))
-           (un (fi 'unit res_li)))
+           (res_li2 (delete 'crash res_li))
+           (ok (filter '_ok_ res_li2))
+           (un (filter 'fail res_li2)))
       (if (== (length ok) 0)
-        un
-        ok
-        ))
+        res_li2
+        res_li2))
     (catch 
       ((tuple x y z) 
        (progn
@@ -124,14 +154,13 @@
         (arg (apply test_fn 
                     (list mod fn 'true))))
     (try
-      (if (apply test_fn 
+      (case (apply test_fn 
                  (list mod fn 'false))
-        (tuple 'ok mod  ar arg)
-        (tuple 'unit mod ar arg))
-        
+        ('true (tuple '_ok_ arg  mod))
+        (fail (tuple 'fail arg (list 'quote fail) )))
       (catch 
         ((tuple m n o) 
-         (tuple 'crash  m  ar arg))))))
+         (tuple 'crash arg m))))))
 
 (defun create (mod)
   (let ((file (: io_lib format '"esrc/~s.lfe" 

@@ -10,50 +10,50 @@
           (stop 0))
   (behaviour gen_server))
 
-;; Description: Image is a database
-;; with stored functions(FUCR). The
-;; word image is used since it is
-;; modelled after lisp images.
-;; Functions are searched with help of
-;; unit tests (TBS).
+;; Description: Lfeimage is a database
+;; with stored functions(FUCR see[1]). 
+;; Functions are searched with unit 
+;; tests (TBS see[2]).
 
-
-;; Test Based Search (TBS)
-;; -------------------------------
-;;
-;; Functions Using version Control 
+;; [1] 
+;; Function Using version Control 
 ;; Recovery (FUCR)
 ;; -------------------------------
 ;; Functions have a specific format to
 ;; be able to store more meta
 ;; data. This makes it possible to act
-;; on failure.  Functions complying to
-;; this format is called 'Functions
-;; Using version Control Recovery'
-;; (FUCR). Fucr tries to recover using
-;; next or previos version of the
-;; stored function. The most
-;; finegranded vc strategy so far.
+;; on failure. Functions complying to
+;; this format is called 'Function
+;; Using version Control Recovery'.
+;; FUCR tries to recover using
+;; the previous version of the
+;; stored function. 
 ;;
-;; If failure, try my tests on next
-;; version. If success, use.
-;; Else go back.
-;;
-;; This project tries to be a lisp
+;; This project aims  to be a lisp
 ;; image with small canonical fucr:ers.
+
+;; [2]
+;; Test Based Search (TBS)
+;; -------------------------------
+;; Input parameters used to search 
+;; function db are arguments and 
+;; expected result. 
+;; When success, a list of functions is
+;; returned. When arguments and result
+;; differ. The calculated function 
+;; result is returned. Hinting 
+;; about what the result should 
+;; have been. Making it easier
+;; to spot the problem.
 
 ;; Work flow using image
 ;; ---------------------
 ;; Write your code as the function
-;; existed. Error?  Query the database
-;; and if nothing is found Dbfun will
-;; write the first prototype for you.
-;; That will keep you coding, don't
-;; stop.  Then when done, write more
-;; toplevel unit tests.  Watch the low
-;; level fail. Write more lowlevel
-;; test. Then go back up. More hi
-;; level tests.
+;; existed. Error? Missing function?  
+;; Query the database
+;; and if nothing is found a unit 
+;; test and first prototype will 
+;; be suggested.
 
 ;; Script example.
 ;; 1. I need ([1],[5])=[1,5]
