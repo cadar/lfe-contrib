@@ -1,5 +1,6 @@
-(query 'lists 
-       (where
-    2 'x -> '(x x)
-    2 'x -> '(x x)
-))  
+make repl
+(c '"mod.lfe")
+(slurp '"mod.lfe")
+(query 'lists  (where 
+     '(x x) '(y y) '-> '(x x y y) 
+))

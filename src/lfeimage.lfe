@@ -1,20 +1,14 @@
 (defmodule lfeimage 
-  (import 
-   (from io_lib 
-         (format 1)
-         (format 2)) 
-   (from lists 
-         (map 2)
-         (reverse 1)
-         (foreach 2) 
-         (any 2) 
-         (keyfind 3) 
-         (member 2)) 
-   (from code 
-         (load_file 1))) 
-  (export 
-   (start 0) 
-   (init 0)))
+  (export (start_link 0)
+          (init 1) 
+          (handle_call 3) (handle_cast 2)
+          (handle_info 2) (terminate 2) 
+          (code_change 3)
+          (idefun 0)
+          (li 0)
+          (init 0)
+          (stop 0))
+  (behaviour gen_server))
 
 ;; Description: Image is a database
 ;; with stored functions(FUCR). The
@@ -43,11 +37,10 @@
 ;;
 ;; If failure, try my tests on next
 ;; version. If success, use.
-;; Else go back in version 
-;; until success.
+;; Else go back.
 ;;
 ;; This project tries to be a lisp
-;; image containing small fucr:ers.
+;; image with small canonical fucr:ers.
 
 ;; Work flow using image
 ;; ---------------------
@@ -103,170 +96,59 @@
 ;; ass a test function for the 
 ;; module.
 
-;-------- defrecord hack --------
-(eval-when-compile
-  (defun def_record_funs () 
-    (list '(name 0) 
-          '(source 0)
-          '(tags 0)
-          '(user 0)
-          ))
-  (defun def_record_tests () 
-    (list '(name 0) '(source 0)))
-  (defun def_record_log () 
-    (list '(name 0) '(source 0)))
-  (defun def_record_users () 
-    (list '(name 0) '(source 0)))
-  (defun name_only (x)
-    (if (== x '())
-      '()
-      (cons (hd (hd x)) 
-            (name_only (tl x)))))
-)
+;; clean up the code the same as
+;; we clean up a database. Go through
+;; it one after one, with help of a
+;; community!
 
-(defmacro defrecord_funs (x) 
-  `(defrecord ,x ,@(def_record_funs)))
-(defrecord_funs funs)
-(defmacro record_info_fields_funs () 
-  `',(name_only (def_record_funs)))
+;; introduce functions 10% watch 
+;; statistics, increase 20%. Smooth
+;; integration.
 
-(defmacro defrecord_log (x) 
-  `(defrecord ,x ,@(def_record_log)))
-(defrecord_log log)
-(defmacro record_info_fields_log () 
-  `',(name_only (def_record_log)))
+;; there is no developing face, it is
+;; only production.
 
 
-(defmacro defrecord_tests (x) 
-  `(defrecord ,x ,@(def_record_tests)))
-(defrecord_tests tests)
-(defmacro record_info_fields_tests () 
-  `',(name_only (def_record_tests)))
+;;---- helper ----
+(defmacro rpc
+  ((fn . '()) 
+   `(defun ,fn ()
+      (: gen_server call 'lfeimage_proc ',fn))))
+;;---- interface ----
+(rpc init)
+(rpc idefun)
+(rpc li)
+(rpc stop)
+;;---- gen_server ----
+(defun start_link ()
+  (: gen_server start_link
+    (tuple 'local 'lfeimage_proc) 
+    'lfeimage (list) (list)))
 
-;-------------------------------------
+(defun init (par)
+  (let ((detsdb (: db init par)))
+    (tuple 'ok (tuple detsdb))))
 
-(defun testfn (test_fn mod func)
-  (try
-    (let* (((tuple fn ar) func)
-           (res 
-            (apply test_fn 
-                   (list mod fn ar))))
-      (if res 
-        (: io format '"~p:~p/~p~n" 
-           (list mod fn ar))))
-    (catch 
-      ((tuple _ n o) (tuple n)))))
-
-(defun l2bin (li)
-  (list_to_binary
-   (: lists flatten li)))
-
-(defun create (mod)
-  ;; get fun from mnesia
-  ;; create file
-  ;; compile
-  ;; test
-  (let ((file (format '"esrc/~s.lfe" 
-                      (list mod))))
-    (: file write_file file 
-       (l2bin
-        (list
-         (format '"(defmodule ~s~n" 
-                 (list mod))
-  '" (export (start 2)))" 10
-  '"(defun start (x y) " 10 
-  '";; main function" 10
-  '"(: io format '\"~p ~p.\"" 10
-  '"(list x y))" 10 
-  '"(: lists append x y)" 10 
-  '")" 10
-         )))
-    file))
-
-(defun comp (mod)
-  (: lfe_comp file mod 
-     (list 'report 
-           (tuple 'outdir '"ebin"))))
-
-(defun on_all_export (mod fn_test)
-  (try
-    (let* ((mod_info 
-            (call mod 'module_info))
-           ((tuple 'exports funcs) 
-            (keyfind 'exports 1 
-                     mod_info)))
-      (map
-        (lambda (fn) 
-          (testfn fn_test mod fn))
-        funcs))
-    (catch 
-      ((tuple x y z) 
-       (: io format '"ERR ~p ~p ~p~n" 
-          (list x y z))
-       (let ((file (create mod)))
-         (comp file)
-         (load_file mod)
-         (on_all_export mod fn_test))))))
-;;------------------------------------
-
-(defun query (mod x)
-  (on_all_export mod (eval x)))
-
-(defmacro where 
-  (unit `(tran start ,@unit)))
-(defmacro tran 
-   ((e . ('-> . '())) `'(more_arg ,e))
-   ((e . ('-> . (e2 . '()))) 
-   `(cons (list '== 
-                '(call mod f 
-                   ,@(reverse e)) 
-                ',e2) 
-          '()))
-   ((e . ('-> . (e2 . es)))
-   `(cons (list '== 
-                '(call mod f 
-                   ,@(reverse e)) 
-                ',e2) 
-          (tran restart ,@es)))
-   (('start . (e . es))
-    `(list 'lambda '(mod f arity) 
-           (cons 'andalso 
-                 (tran (,e ) ,@es))))
-   (('restart . (e . es))
-    `(tran (,e )     ,@es))
-   ((e . (e2 . es)) 
-    `(tran (,e2 ,@e) ,@es))
-   ((e . '()) `'(miss ,e))
-   (e `'(error ,@e)))
-
-;;------------------------------------
-(defun init ()
-  (: mnesia create_schema 
-    (list (: erlang node))) 
-  (: mnesia start)
-  (: mnesia create_table 'funs 
-     (list 
-      (tuple 'disc_copies 
-             (list (: erlang node)))
-      (tuple 'attributes 
-            (record_info_fields_funs)))))
-
-(defun qq (ast)
-  (on_all_export 
-   'lists 
-   (lambda (mod f arity)
-     (andalso 
-      (== (call mod f '(1) '(3)) '(1 3))
-      (== (call mod f '(4) '(5)) '(4 5))))))
-
-(defun start ()
-    (: mnesia start)
-    (foreach (lambda (mod) 
-               (qq mod)
-               )
-             (list 'lists 'aaa123)))
-
-
+(defun handle_call 
+  (('init from state)
+   (let ((new_state (init '())))
+     (tuple 'reply new_state new_state)))
+  (('add from state)
+   (tuple 'reply 'start state))
+  (('list from state)
+   (tuple 'reply 'start state))
+  (('stop from state)
+   (tuple 'stop 'normal state))
+  ((req from state)
+   (tuple 'reply (tuple 'missing req) state)))
+(defun handle_cast (msg state) 
+  (tuple 'noreply state))
+(defun handle_info (info state)
+  (tuple 'noreply state))
+(defun terminate (reason state)
+  'ok)
+(defun code_change (old-vers state extra)
+  (tuple 'ok state))
 
 ;;; Local Variables: ***
 ;;; mode:lfe ***
