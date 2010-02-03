@@ -4,10 +4,12 @@
           (handle_call 3) (handle_cast 2)
           (handle_info 2) (terminate 2) 
           (code_change 3)
-          (idefun 0)
-          (li 0)
-          (init 0)
-          (stop 0))
+          (init_db 1)
+          (lookup 1)
+          (all 0)
+          (rebeam 0)
+          (stop 0)
+          (q 1))
   (behaviour gen_server))
 
 ;; Description: Lfeimage is a database
@@ -108,17 +110,140 @@
 ;; there is no developing face, it is
 ;; only production.
 
-
 ;;---- helper ----
 (defmacro rpc
   ((fn . '()) 
    `(defun ,fn ()
-      (: gen_server call 'lfeimage_proc ',fn))))
+      (: gen_server call 'lfeimage_proc 
+         (tuple ',fn)))))
+(defmacro rpc1
+  ((fn . '()) 
+   `(defun ,fn (x)
+      (: gen_server call 'lfeimage_proc 
+         (tuple ',fn x)))))
+
 ;;---- interface ----
-(rpc init)
-(rpc idefun)
-(rpc li)
+(rpc1 init_db)
+(rpc rebeam)
+(rpc1 lookup)
+(rpc all)
 (rpc stop)
+
+
+(eval-when-compile
+(defun lookup_fn_hlp (image fun)
+  (let ((res (: dets foldr 
+               (lambda (a es) 
+                 (let (((tuple name module 
+                               fn ar prev) a))
+                   (if (== name fun)
+                     (cons a es)
+                     es)))
+               '() image)))
+    (if (== res '())
+      'missing
+      (hd res))))
+
+(defun add (x)
+  (: gen_server call 'lfeimage_proc 
+     (tuple 'add x)))
+)
+
+(defmacro def
+  (es `(add '(defun ,@es))))
+
+(defmacro ->
+  ((e . es) `(let ((fucr (lookup_fn_hlp '"image" ',e)))
+               (if (== fucr 'missing) 
+                 'missing
+                 (let (((tuple fn mod _ _ _) fucr))
+                   (call mod ',e ,@es))))))
+
+(defmacro file
+  ((e . es) `(let ((fucr (lookup_fn_hlp '"image" ',e)))
+               (if (== fucr 'missing) 
+                 'missing
+                 (let (((tuple fn mod _ _ _) fucr))
+                   (++ '".esrc/" (++ (atom_to_list mod) '".lfe")))))))
+
+(defun q  (where)
+  (let* ((fucrs (: db all_fucr '"image")))
+    (: lists flatten (: mod query fucrs where))))
+(defun qm  (fucr where)
+  (: lists flatten (: mod query fucr where)))
+
+(eval-when-compile
+(defun perms 
+  (('()) '(()))
+  ((x) (lc ((<- h x)
+            (<- t (perms (-- x (list h)))))
+         (cons h t))))
+(defun add_quote (li)
+  (: lists map (lambda (x) 
+                 (list 'quote x))
+     li))
+; (lambda (mod1 f doc)
+;    (if doc ; return doc-string
+;      (list '== (cons ': (cons mod1 (cons f '(2 'x2)))) 
+;              ''(x x))
+;      (let* ((val (call mod1 f 2 'x)) 
+;             (res (== val '(x x)))) 
+;       (if res 
+;           res 
+;           val)))))
+(defun get_perm (args out)
+  (: lists map 
+    (lambda (a)
+      (list 'list ''lambda ''(mod1 f doc) 
+            ; If doc is true return test
+            ; description.
+            (list 'list ''if ''doc 
+                 (list 'quote 
+                 (list 'list ''==  
+                 (list 'cons '':
+                 (list 'cons 'mod1 
+                 (list 'cons 'f 
+                 (list 'quote a))))
+                 (list 'quote  out )))
+
+         (list 'list ''let* 
+          (list 'list 
+           (list 'list ''val  ; pre-calculate
+            (cons 'list 
+            (cons ''call 
+            (cons ''mod1 
+            (cons ''f (add_quote a))))))
+           (list 'list ''res 
+            (list 'list ''== ''val
+            (list 'quote out)))) 
+           (list 'list ''if ''res 
+                 ''res 
+                 ''val))))) 
+     (perms args)))
+(defun ext_list(args out)
+   (cons 'list (cons ''list (get_perm args out))))
+)
+
+(defmacro where 
+  (unit `(trans start ,@unit)))
+(defmacro trans 
+   ((e . (''-> . '())) `'(more_arg ,e))
+   ((e . (''-> . (e2 . '()))) 
+    `(cons ,(ext_list e e2)
+           '()))
+   ((e . (''-> . (e2 . es)))
+    `(cons ,(ext_list e e2)
+           (trans restart ,@es)))
+   (('start . (e . es))
+    `(cons 'list (trans (,e ) ,@es)))
+   (('restart . (e . es))
+    `(trans (,e ) ,@es))
+   ((e . (e2 . es)) 
+    `(trans (,e2 ,@e) ,@es))
+   ((e . '()) `'(miss ,e))
+   (e `'(error ,@e)))
+
+
 ;;---- gen_server ----
 (defun start_link ()
   (: gen_server start_link
@@ -126,19 +251,34 @@
     'lfeimage (list) (list)))
 
 (defun init (par)
-  (let ((detsdb (: db init par)))
-    (tuple 'ok (tuple detsdb))))
+;  (: io format '"lfeimage init~n" (list))
+  (let ((detsdb (: db init '"image")))
+    (tuple 'ok detsdb)))
 
 (defun handle_call 
-  (('init from state)
-   (let ((new_state (init '())))
+  (((tuple 'init_db image) from state)
+   (let ((new_state (: db init image)))
      (tuple 'reply new_state new_state)))
-  (('add from state)
-   (tuple 'reply 'start state))
-  (('list from state)
-   (tuple 'reply 'start state))
-  (('stop from state)
+
+  (((tuple 'rebeam) from state)
+   (let ((res (: db rebeam state)))
+     (tuple 'reply res  state)))
+
+  (((tuple 'add fun) from state)
+   (let ((res (: db insert state fun)))
+     (tuple 'reply res state)))
+
+  (((tuple 'all) from state)
+   (let ((res (: db all state)))
+     (tuple 'reply res  state)))
+
+  (((tuple 'lookup key) from state)
+   (let ((res (: db lookup state key)))
+     (tuple 'reply res  state)))
+
+  (((tuple 'stop) from state)
    (tuple 'stop 'normal state))
+
   ((req from state)
    (tuple 'reply (tuple 'missing req) state)))
 (defun handle_cast (msg state) 

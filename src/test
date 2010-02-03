@@ -1,7 +1,20 @@
+make
+rm image
 make repl
-(c '"mod.lfe")
-(slurp '"mod.lfe")
-(query 'lists  (where 
-       2 'x2  '-> '(x x)
-       2 'x '-> '(x x)
-))
+(slurp '"lfeimage.lfe")
+(start_link)
+(def one(x) (+ 1 x))
+(def two(x) (+ 2 x))
+(def three(x) (+ 3 x))
+(def three(x) 
+     (+ (one x) 
+        (two x)))
+(def all_3 ()
+     (+ (three 2)
+     (two (one 2))))
+(-> all_3)
+(file all_3)
+(slurp (file all_3))
+(all_3)
+(slurp '"lfeimage.lfe")
+(q (where 2 '-> 2))

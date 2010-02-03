@@ -1,12 +1,11 @@
 #!/bin/bash
-export PATH=/Users/Mats/lithium/lib/otp_src_R13B03/bin:$PATH
+export PATH=~/lithium/lib/otp_src_R13B03/bin:$PATH
+make
 
 function run {
     screen -X stuff "$1"
     sleep 0.02
 }
-make clean 
-make 
 
 run $'\003'  
 run $'a\n'
