@@ -54,9 +54,9 @@
   (if (== li '()) '()
       (let* ((head (hd li))
              ((tuple status _ _ ) head))
-        (if (/= status key)
-          (cons head (delete key (tl li)))
-          (delete key (tl li))))))
+        (if (== status key)
+          (delete key (tl li))
+          (cons head (delete key (tl li)))))))
 
 (defun on_all_export (mod fn_test handler opt)
   (try
@@ -102,8 +102,9 @@
          (tuple 'crash arg m))))))
 
 (defun create (mod)
-  (let ((file (: io_lib format '"./.esrc/~s.lfe" 
-                      (list mod))))
+  (let ((file 
+         (: io_lib format '"./.esrc/~s.lfe" 
+            (list mod))))
     (: file write_file file 
        (l2bin
         (list

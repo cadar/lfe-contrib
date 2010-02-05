@@ -1,3 +1,4 @@
+make clean
 make
 rm image
 make repl
@@ -6,6 +7,10 @@ make repl
 (def one(x) (+ 1 x))
 (def two(x) (+ 2 x))
 (def three(x) (+ 3 x))
+(def all_3 ()
+     (+ (three 2)
+     (two (one 2))))
+(-> all_3)
 (def three(x) 
      (+ (one x) 
         (two x)))
@@ -13,8 +18,5 @@ make repl
      (+ (three 2)
      (two (one 2))))
 (-> all_3)
-(file all_3)
-(slurp (file all_3))
-(all_3)
-(slurp '"lfeimage.lfe")
-(q (where 2 '-> 2))
+(query (where 0 '-> 2))
+(query 'lists (where 2 'x '-> '(x x)))

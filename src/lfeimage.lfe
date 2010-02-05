@@ -1,15 +1,20 @@
 (defmodule lfeimage 
+  (import (from lists (flatten 1))
+          (from mod (query 2)))
   (export (start_link 0)
           (init 1) 
-          (handle_call 3) (handle_cast 2)
-          (handle_info 2) (terminate 2) 
+          (handle_call 3) 
+          (handle_cast 2)
+          (handle_info 2) 
+          (terminate 2) 
           (code_change 3)
           (init_db 1)
           (lookup 1)
-          (all 0)
           (rebeam 0)
+          (all 0)
           (stop 0)
-          (q 1))
+          (query 1)
+          (query 2))
   (behaviour gen_server))
 
 ;; Description: Lfeimage is a database
@@ -110,33 +115,13 @@
 ;; there is no developing face, it is
 ;; only production.
 
-;;---- helper ----
-(defmacro rpc
-  ((fn . '()) 
-   `(defun ,fn ()
-      (: gen_server call 'lfeimage_proc 
-         (tuple ',fn)))))
-(defmacro rpc1
-  ((fn . '()) 
-   `(defun ,fn (x)
-      (: gen_server call 'lfeimage_proc 
-         (tuple ',fn x)))))
-
-;;---- interface ----
-(rpc1 init_db)
-(rpc rebeam)
-(rpc1 lookup)
-(rpc all)
-(rpc stop)
-
 
 (eval-when-compile
-(defun lookup_fn_hlp (image fun)
+(defun lookup_fn_mod (image fun)
   (let ((res (: dets foldr 
                (lambda (a es) 
-                 (let (((tuple name module 
-                               fn ar prev) a))
-                   (if (== name fun)
+                 (let (((tuple fn _ _ _ _) a))
+                   (if (== fn fun)
                      (cons a es)
                      es)))
                '() image)))
@@ -153,24 +138,23 @@
   (es `(add '(defun ,@es))))
 
 (defmacro ->
-  ((e . es) `(let ((fucr (lookup_fn_hlp '"image" ',e)))
-               (if (== fucr 'missing) 
-                 'missing
-                 (let (((tuple fn mod _ _ _) fucr))
-                   (call mod ',e ,@es))))))
+  ((e . es) 
+   `(let ((fucr (lookup_fn_mod '"image" ',e)))
+      (if (== fucr 'missing) 
+        'missing
+        (let (((tuple fn mod _ _ _) fucr))
+          (call mod ',e ,@es))))))
 
-(defmacro file
-  ((e . es) `(let ((fucr (lookup_fn_hlp '"image" ',e)))
-               (if (== fucr 'missing) 
-                 'missing
-                 (let (((tuple fn mod _ _ _) fucr))
-                   (++ '".esrc/" (++ (atom_to_list mod) '".lfe")))))))
+;; ---------------------------------------------------
+;; ------------- interface to mod.lfe ----------------
+;; ---------------------------------------------------
 
-(defun q  (where)
-  (let* ((fucrs (: db all_fucr '"image")))
-    (: lists flatten (: mod query fucrs where))))
-(defun qm  (fucr where)
-  (: lists flatten (: mod query fucr where)))
+(defun query (where)
+   (let* ((fucrs (: db all_fucr '"image")))
+     (flatten (: mod query fucrs where))))
+
+(defun query (fucr where)
+   (flatten (: mod query fucr where)))
 
 (eval-when-compile
 (defun perms 
@@ -182,6 +166,9 @@
   (: lists map (lambda (x) 
                  (list 'quote x))
      li))
+
+; get_perm - create this code.
+;
 ; (lambda (mod1 f doc)
 ;    (if doc ; return doc-string
 ;      (list '== (cons ': (cons mod1 (cons f '(2 'x2)))) 
@@ -221,8 +208,9 @@
                  ''val))))) 
      (perms args)))
 (defun ext_list(args out)
-   (cons 'list (cons ''list (get_perm args out))))
-)
+   (cons 'list 
+         (cons ''list 
+               (get_perm args out)))))
 
 (defmacro where 
   (unit `(trans start ,@unit)))
@@ -243,15 +231,35 @@
    ((e . '()) `'(miss ,e))
    (e `'(error ,@e)))
 
+;; ---------------------------------------------------
+;; ------------- Application code --------------------
+;; ---------------------------------------------------
+;;---- helper ----
+(defmacro rpc
+  ((fn . '()) 
+   `(defun ,fn ()
+      (: gen_server call 'lfeimage_proc 
+         (tuple ',fn)))))
+(defmacro rpc1
+  ((fn . '()) 
+   `(defun ,fn (x)
+      (: gen_server call 'lfeimage_proc 
+         (tuple ',fn x)))))
 
-;;---- gen_server ----
+;;---- interface ----
+(rpc1 init_db)
+(rpc rebeam)
+(rpc1 lookup)
+(rpc all)
+(rpc stop)
+
+
 (defun start_link ()
   (: gen_server start_link
     (tuple 'local 'lfeimage_proc) 
     'lfeimage (list) (list)))
 
 (defun init (par)
-;  (: io format '"lfeimage init~n" (list))
   (let ((detsdb (: db init '"image")))
     (tuple 'ok detsdb)))
 
