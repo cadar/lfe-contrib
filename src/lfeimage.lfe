@@ -1,5 +1,8 @@
 (defmodule lfeimage 
-  (import (from lists (flatten 1))
+  (import (from db (all_fucr 1)))
+  (import (from lists 
+                (flatten 1)
+                (map 2))
           (from mod (query 2)))
   (export (start_link 0)
           (init 1) 
@@ -12,6 +15,7 @@
           (lookup 1)
           (rebeam 0)
           (all 0)
+          (all_fucr 0)
           (stop 0)
           (query 1)
           (query 2))
@@ -137,12 +141,12 @@
 (defmacro def
   (es `(add '(defun ,@es))))
 
-(defmacro ->
+(defmacro =>
   ((e . es) 
-   `(let ((fucr (lookup_fn_mod '"image" ',e)))
-      (if (== fucr 'missing) 
+   `(let ((fucr (lookup ',e)))
+      (if (== fucr '()) 
         'missing
-        (let (((tuple fn mod _ _ _) fucr))
+        (let (((tuple fn mod _ _ _) (hd fucr)))
           (call mod ',e ,@es))))))
 
 ;; ---------------------------------------------------
@@ -150,8 +154,9 @@
 ;; ---------------------------------------------------
 
 (defun query (where)
-   (let* ((fucrs (: db all_fucr '"image")))
-     (flatten (: mod query fucrs where))))
+  (flatten 
+   (: mod query 
+     (all_fucr) where)))
 
 (defun query (fucr where)
    (flatten (: mod query fucr where)))
@@ -162,6 +167,7 @@
   ((x) (lc ((<- h x)
             (<- t (perms (-- x (list h)))))
          (cons h t))))
+
 (defun add_quote (li)
   (: lists map (lambda (x) 
                  (list 'quote x))
@@ -234,6 +240,7 @@
 ;; ---------------------------------------------------
 ;; ------------- Application code --------------------
 ;; ---------------------------------------------------
+
 ;;---- helper ----
 (defmacro rpc
   ((fn . '()) 
@@ -251,6 +258,7 @@
 (rpc rebeam)
 (rpc1 lookup)
 (rpc all)
+(rpc all_fucr)
 (rpc stop)
 
 
@@ -278,6 +286,10 @@
 
   (((tuple 'all) from state)
    (let ((res (: db all state)))
+     (tuple 'reply res  state)))
+
+  (((tuple 'all_fucr) from state)
+   (let ((res (: db all_fucr state)))
      (tuple 'reply res  state)))
 
   (((tuple 'lookup key) from state)
