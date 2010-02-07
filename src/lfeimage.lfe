@@ -1,8 +1,9 @@
 (defmodule lfeimage 
-  (import (from db (all_fucr 1)))
-  (import (from lists 
+  (import (from db (all_fucr 1))
+          (from lists 
                 (flatten 1)
                 (map 2))
+          (from hlp (is_empty 1))
           (from mod (query 2)))
   (export (start_link 0)
           (init 1) 
@@ -14,6 +15,7 @@
           (init_db 1)
           (lookup 1)
           (rebeam 0)
+          (recompile 1)
           (all 0)
           (all_fucr 0)
           (stop 0)
@@ -143,35 +145,37 @@
 
 (defmacro =>
   ((e . es) 
-   `(let ((fucr (lookup ',e)))
-      (if (== fucr '()) 
+   `(let ((modules (lookup ',e)))
+      (if (is_empty modules)
         'missing
-        (let (((tuple fn mod _ _ _) (hd fucr)))
+        (let (((tuple fn mod _ _ _) (hd modules)))
           (call mod ',e ,@es))))))
 
-;; ---------------------------------------------------
-;; ------------- interface to mod.lfe ----------------
-;; ---------------------------------------------------
+;; -----------------------------------
+;; ------ interface to mod.lfe -------
+;; -----------------------------------
 
 (defun query (where)
   (flatten 
-   (: mod query 
-     (all_fucr) where)))
-
-(defun query (fucr where)
-   (flatten (: mod query fucr where)))
+   (: mod query (all_fucr) where)))
+(defun query (module where)
+  (case (: mod query module where)
+    ((tuple 'error 'nofile) 'missing_module)
+    ('() 'no_match)
+    (res (flatten res))))
 
 (eval-when-compile
 (defun perms 
   (('()) '(()))
-  ((x) (lc ((<- h x)
-            (<- t (perms (-- x (list h)))))
-         (cons h t))))
+  ((x) 
+   (lc ((<- h x)
+        (<- t (perms (-- x (list h)))))
+     (cons h t))))
 
 (defun add_quote (li)
-  (: lists map (lambda (x) 
-                 (list 'quote x))
-     li))
+  (: lists map 
+    (lambda (x) (list 'quote x))
+    li))
 
 ; get_perm - create this code.
 ;
@@ -257,6 +261,7 @@
 (rpc1 init_db)
 (rpc rebeam)
 (rpc1 lookup)
+(rpc1 recompile)
 (rpc all)
 (rpc all_fucr)
 (rpc stop)
@@ -280,6 +285,10 @@
    (let ((res (: db rebeam state)))
      (tuple 'reply res  state)))
 
+  (((tuple 'recompile fun) from state)
+   (let ((res (: db recompile_mod state fun)))
+     (tuple 'reply res state)))
+
   (((tuple 'add fun) from state)
    (let ((res (: db insert state fun)))
      (tuple 'reply res state)))
@@ -292,9 +301,9 @@
    (let ((res (: db all_fucr state)))
      (tuple 'reply res  state)))
 
-  (((tuple 'lookup key) from state)
-   (let ((res (: db lookup state key)))
-     (tuple 'reply res  state)))
+  (((tuple 'lookup fun) from state)
+   (let ((res (: db lookup_fn state fun)))
+     (tuple 'reply res state)))
 
   (((tuple 'stop) from state)
    (tuple 'stop 'normal state))

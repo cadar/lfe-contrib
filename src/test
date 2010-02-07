@@ -1,23 +1,11 @@
-make clean
+make clean 
 make
-rm image
 make repl
 (slurp '"lfeimage.lfe")
 (start_link)
-(def one(x) (+ 1 x))
-(def two(x) (+ 2 x))
-(def three(x) (+ 3 x))
-(def all_3 ()
-     (+ (three 2)
-     (two (one 2))))
-(=> all_3)
-(def three(x) 
-     (+ (one x) 
-        (two x)))
-(def all_3 ()
-     (+ (three 2)
-     (two (one 2))))
-(=> all_3)
-(query (where 0 '-> 2))
-(query 'lists (where 2 'x '-> '(x x)))
-(: db rebeam '"image")
+(: os cmd '"rm ebin/*.beam")
+(query (where 1 '-> 1))
+(all_fucr)
+(query 'sd  (where 1 '-> 1))
+(query   (where 1 '-> 1))
+(query 'lists  (where 1 '-> 1))

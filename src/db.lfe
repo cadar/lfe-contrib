@@ -4,6 +4,9 @@
          (format 1))
    (from dets 
          (delete 2))
+   (from hlp 
+         (is_empty 1)
+         (not_empty 1))
    (from lists 
          (map 2)
          (append 2)
@@ -16,10 +19,11 @@
          (member 2)))
   (export 
    (init 1)
+   (import_text 1)
    (rebeam 1)
    (rebeam1 2)
-   (lookup 2)
    (lookup_fn 2)
+   (recompile_mod 2)
    (insert 2)
    (branch 1)
    (make_import 2)
@@ -34,7 +38,7 @@
 
 (defun insert (image code) 
   (let* ((ref (make_ref))
-         (name (hd (tl code)))
+         (name (fun_name code))
          (prev (lookup_fn image name))
          (a (tuple name 
                    (list_to_atom ref) 
@@ -42,10 +46,36 @@
                    (fun_arity code) 
                    prev))
          (err (rebeam1 image a)))
-    (if(/= prev '())
+    (if (not_empty prev)
       (: dets delete image name))
     (: dets insert image a)
     err))
+
+
+(defun lookup_fn (image fun)
+  (: dets foldr 
+    (lambda (a es) 
+      (let (((tuple fn _ _ _ _) a))
+        (if (== fn fun)
+          (cons a es)
+          es)))
+    '() image))
+
+(defun recompile_mod (image mod)
+  (let ((a (lookup_mod image mod)))
+    (if (is_empty a) 
+      'missing
+      (let ((err (rebeam1 image (hd a))))
+        err))))
+
+(defun lookup_mod (image mod)
+  (: dets foldr 
+    (lambda (a es) 
+      (let (((tuple _ mod1 _ _ _) a))
+        (if (== mod1 mod)
+          (cons a es)
+          es)))
+    '() image))
 
 (defun all (image)
   (: dets foldl 
@@ -59,18 +89,6 @@
         (cons mod es)))
     '() image))
 
-(defun lookup (image id)
-  (: dets lookup image id))
-
-(defun lookup_fn (image fun)
-  (: dets foldr 
-    (lambda (a es) 
-      (let (((tuple fn _ _ _ _) a))
-        (if (== fn fun)
-          (cons a es)
-          es)))
-    '() image))
-
 (defun rebeam (image)
   (: os cmd '"rm .esrc/fucr*")
   (: dets foldl 
@@ -82,10 +100,10 @@
   (: dets close image))
 ;-------------------------------------
 (defun rebeam1 (image a)
-  (let* (((tuple fn fucr prog _ _) a)
+  (let* (((tuple fn module prog _ _) a)
          (functions (branch prog))
          (imports (make_import image functions))
-         (file (create fucr imports prog)))
+         (file (create module imports prog)))
     (: mod comp file)))
 
 (defun branch 
@@ -98,24 +116,22 @@
   (( (he . li)  ) (branch li)))
 
 (defun make_import (image functions)
-  (let* ((li (foldr
-              (lambda (fn as)
-                (let ((a (lookup_fn image fn)))
-                  (if (== '() a)
-                    as
-                    (cons a as))))
-              '() functions))
-         (import_li
-          (map 
-           (lambda (x) 
-             (let (((tuple fn mod _ ar _) 
-                    (hd x)))
-               (list 'from mod 
-                     (list fn ar))))
-           li)))
-    (if (== 0 (length import_li))
+  (let ((from_li (foldr
+                  (lambda (fn as)
+                    (let ((a (lookup_fn image fn)))
+                      (if (is_empty a)
+                        as
+                        (cons (import_text a) as))))
+                  '() functions)))
+    (if (is_empty from_li)
       '()
-      (cons 'import import_li))))
+      (cons 'import from_li))))
+
+(defun import_text (a)
+  (let (((tuple fn mod _ ar _)
+         (hd a)))
+    (list 'from mod 
+          (list fn ar))))
 
 (defun create (mod imports prog)
   (let ((file (: io_lib format 
@@ -169,8 +185,6 @@
   (tl (tl (tl code))))
 (defun fun_name (code)
   (hd (tl code)))
-
-
 
 
 
