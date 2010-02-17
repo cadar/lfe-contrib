@@ -25,49 +25,46 @@
   (behaviour gen_server))
 
 ;; Description: Lfeimage is a database
-;; with stored functions(FUCR see[1]). 
-;; Functions are searched with unit 
-;; tests (TBS see[2]).
+;; with stored functions.  Functions
+;; are searched with unit tests.
 
-;; [1] 
-;; Function Using version Control 
+;; Function Using version Control
 ;; Recovery (FUCR)
-;; -------------------------------
+;; ----------------------------------
 ;; Functions have a specific format to
-;; be able to store more meta
-;; data. This makes it possible to act
-;; on failure. Functions complying to
+;; be able to store meta data. This
+;; makes it possible to act on
+;; failure. Functions complying to
 ;; this format is called 'Function
 ;; Using version Control Recovery'.
-;; FUCR tries to recover using
-;; the previous version of the
-;; stored function. 
-;;
-;; This project aims  to be a lisp
-;; image with small canonical fucr:ers.
+;; FUCR tries to recover using the
+;; previous version of the stored
+;; function.
 
-;; [2]
 ;; Test Based Search (TBS)
-;; -------------------------------
-;; Input parameters used to search 
-;; function db are arguments and 
-;; expected result. 
-;; When success, a list of functions is
-;; returned. When arguments and result
-;; differ. The calculated function 
-;; result is returned. Hinting 
-;; about what the result should 
-;; have been. Making it easier
-;; to spot the problem.
+;; ----------------------------------
+;; To search the database two input
+;; arguments is used in the search
+;; function.  1. test arguments and
+;; 2. expected result.  The output is
+;; list of functions that produce a
+;; result. When arguments and do not
+;; match. The result of the function
+;; is returnd making it easier to spot
+;; the problem.
+
+;; In short
+;; --------
+;; This project is a database with
+;; small canonical fucr:ers.
 
 ;; Work flow using image
-;; ---------------------
+;; -------------------------------
 ;; Write your code as the function
-;; existed. Error? Missing function?  
-;; Query the database
-;; and if nothing is found a unit 
-;; test and first prototype will 
-;; be suggested.
+;; existed. Error? Missing function?
+;; Query the database and if nothing
+;; is found a unit test and first
+;; prototype will be suggested.
 
 ;; Script example.
 ;; 1. I need ([1],[5])=[1,5]
@@ -98,30 +95,11 @@
 ;;    searches list module
 ;;
 ;; 3b  append will do that.
-;; 
+
 ;; FUCR format
-;; -----------
-;; Default module name 'image'
-;; From image we can find all used
-;; code with help of export at the
-;; top. Test are stored as 
-;; normal functions. It must be 
-;; called test to ne recognized 
-;; ass a test function for the 
-;; module.
-
-;; clean up the code the same as
-;; we clean up a database. Go through
-;; it one after one, with help of a
-;; community!
-
-;; introduce functions 10% watch 
-;; statistics, increase 20%. Smooth
-;; integration.
-
-;; there is no developing face, it is
-;; only production.
-
+;; ----------------------------------
+;; A module is in FUCR format if it
+;; contains one function and one test.
 
 (eval-when-compile
 (defun lookup_fn_mod (image fun)
