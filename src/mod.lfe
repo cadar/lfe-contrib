@@ -20,10 +20,12 @@
 ;; >  
 
 (defmodule mod
-  (import (from hlp 
+  (import (from lists 
+                (keysort 2))
+          (from hlp 
+                (l2bin 1)
                 (is_empty 1)))
-  (export (l2bin 1)
-          (query 2)
+  (export (query 2)
           (comp 1)))
 
 (defun query 
@@ -51,8 +53,9 @@
             (lc ((<- te fn_test)      
                  (<- fn funcs))
               (testfn te mod fn)))
-           (res_no_crash (delete 'crash res_li)))
-      res_no_crash)
+           (res_no_crash (delete 'crash res_li))
+           (res_no_arity (delete 'arity res_no_crash)))
+      (keysort 2 res_no_arity))
     (catch 
       ((tuple x test_res z) 
        (progn
@@ -76,15 +79,19 @@
 
 (defun testfn (test_fn mod func)
   (let* (((tuple fn ar) func)
-         (arg (apply test_fn 
-                     (list mod fn 'true))))
+         (doc (apply test_fn 
+                     (list mod fn ar 'true)))
+         (arity (hd doc))
+         (arg (hd (tl doc))))
     (try
+      (if (== arity ar)
       (case (apply test_fn 
-                   (list mod fn 'false))
+                   (list mod fn ar 'false))
         ('true 
          (tuple '_ok_ arg 'SUCCESS))
         (fail 
          (tuple 'fail arg (list 'quote fail) )))
+      (tuple 'arity arg (list 'quote 'fail)))
       (catch 
         ((tuple m n o) 
          (tuple 'crash arg m))))))
@@ -105,10 +112,6 @@
          )))
     file))
 ;-------------------------------
-(defun l2bin (li)
-  (list_to_binary
-   (: lists flatten li)))
-
 (defun comp (mod)
   (: lfe_comp file mod 
      (list 'report 
@@ -121,6 +124,7 @@
         (if (== key1 key)
           (cons head (filter key (tl li)))
           (filter key (tl li))))))
+
 (defun delete (key li)
   (if (is_empty li) '()
       (let* ((head (hd li))

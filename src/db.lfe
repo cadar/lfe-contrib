@@ -5,6 +5,7 @@
    (from dets 
          (delete 2))
    (from hlp 
+         (l2bin 1)
          (is_empty 1)
          (not_empty 1))
    (from lists 
@@ -19,15 +20,11 @@
          (member 2)))
   (export 
    (init 1)
-   (import_text 1)
    (rebeam 1)
-   (rebeam1 2)
-   (lookup_fn 2)
    (recompile_mod 2)
    (insert 2)
-   (branch 1)
    (make_import 2)
-   (all_fucr 1)
+   (all_modules 1)
    (all 1)))
 
 (defun init (par)
@@ -50,8 +47,6 @@
       (: dets delete image name))
     (: dets insert image a)
     err))
-
-
 (defun lookup_fn (image fun)
   (: dets foldr 
     (lambda (a es) 
@@ -61,13 +56,13 @@
           es)))
     '() image))
 
+
 (defun recompile_mod (image mod)
   (let ((a (lookup_mod image mod)))
     (if (is_empty a) 
       'missing
       (let ((err (rebeam1 image (hd a))))
         err))))
-
 (defun lookup_mod (image mod)
   (: dets foldr 
     (lambda (a es) 
@@ -77,12 +72,12 @@
           es)))
     '() image))
 
+
 (defun all (image)
   (: dets foldl 
     (lambda (a es) (cons a  es))
     '() image))
-
-(defun all_fucr (image)
+(defun all_modules (image)
   (: dets foldr 
     (lambda (a es) 
       (let (((tuple _ mod _ _ _) a))
@@ -138,7 +133,7 @@
                 '"./.esrc/~s.lfe" 
                 (list mod))))
     (: file write_file file 
-       (: mod l2bin
+       (l2bin
          (list
           (: io_lib format 
             '"(defmodule ~s" (list mod))
@@ -176,7 +171,6 @@
     (flatten 
      (: io_lib format '"fucr~.36B" 
         (list (- nr 1263760466202795))))))
-
 
 
 (defun fun_arity (code)

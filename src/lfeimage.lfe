@@ -1,5 +1,6 @@
 (defmodule lfeimage 
-  (import (from db (all_fucr 1))
+  (import (from db 
+                (all_modules 1))
           (from lists 
                 (flatten 1)
                 (map 2))
@@ -17,7 +18,7 @@
           (rebeam 0)
           (recompile 1)
           (all 0)
-          (all_fucr 0)
+          (all_mod 0)
           (stop 0)
           (query 1)
           (query 2))
@@ -143,6 +144,7 @@
 (defmacro def
   (es `(add '(defun ,@es))))
 
+
 (defmacro =>
   ((e . es) 
    `(let ((modules (lookup ',e)))
@@ -157,7 +159,7 @@
 
 (defun query (where)
   (flatten 
-   (: mod query (all_fucr) where)))
+   (: mod query (all_mod) where)))
 (defun query (module where)
   (case (: mod query module where)
     ((tuple 'error 'nofile) 'missing_module)
@@ -188,20 +190,21 @@
 ;       (if res 
 ;           res 
 ;           val)))))
-(defun get_perm (args out)
+(defun get_perm (args ar out)
   (: lists map 
     (lambda (a)
-      (list 'list ''lambda ''(mod1 f doc) 
+      (list 'list ''lambda ''(mod1 f ar doc) 
             ; If doc is true return test
             ; description.
             (list 'list ''if ''doc 
                  (list 'quote 
-                 (list 'list ''==  
+                 (list 'list ar
+                 (list 'list ''==
                  (list 'cons '':
                  (list 'cons 'mod1 
                  (list 'cons 'f 
                  (list 'quote a))))
-                 (list 'quote  out )))
+                 (list 'quote out))))
 
          (list 'list ''let* 
           (list 'list 
@@ -220,7 +223,7 @@
 (defun ext_list(args out)
    (cons 'list 
          (cons ''list 
-               (get_perm args out)))))
+               (get_perm args (length args) out)))))
 
 (defmacro where 
   (unit `(trans start ,@unit)))
@@ -241,9 +244,9 @@
    ((e . '()) `'(miss ,e))
    (e `'(error ,@e)))
 
-;; ---------------------------------------------------
-;; ------------- Application code --------------------
-;; ---------------------------------------------------
+;; ---------------------------------------------
+;; ------- Application code --------------------
+;; ---------------------------------------------
 
 ;;---- helper ----
 (defmacro rpc
@@ -263,7 +266,7 @@
 (rpc1 lookup)
 (rpc1 recompile)
 (rpc all)
-(rpc all_fucr)
+(rpc all_mod)
 (rpc stop)
 
 
@@ -297,8 +300,8 @@
    (let ((res (: db all state)))
      (tuple 'reply res  state)))
 
-  (((tuple 'all_fucr) from state)
-   (let ((res (: db all_fucr state)))
+  (((tuple 'all_mod) from state)
+   (let ((res (: db all_modules state)))
      (tuple 'reply res  state)))
 
   (((tuple 'lookup fun) from state)

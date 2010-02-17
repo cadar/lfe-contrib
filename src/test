@@ -1,11 +1,8 @@
-make clean 
-make
 make repl
 (slurp '"lfeimage.lfe")
-(start_link)
-(: os cmd '"rm ebin/*.beam")
-(query (where 1 '-> 1))
-(all_fucr)
-(query 'sd  (where 1 '-> 1))
-(query   (where 1 '-> 1))
-(query 'lists  (where 1 '-> 1))
+(query 'lists (where 1  '(1 2 3) '-> '(1 2)))
+
+
+
+
+
