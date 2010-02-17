@@ -1,7 +1,5 @@
 make repl
 (slurp '"lfeimage.lfe")
-(query 'lists
-       (where 
-       '(3 1 3) '-> '(1 3)
-       '(1 3) '-> '(1 3)
+(query 'lists (where 
+       1 '(3 1 3) '-> '(1 3)
 ))

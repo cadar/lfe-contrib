@@ -11,19 +11,15 @@ OPT       := -noshell -noinput -pa $(LFE) -pa ./ebin
 
 all: $(LFE_BEAM)
 
-#sup_comp.beam: sup_comp.lfe
-#	@erl $(OPT) -eval 'case lfe_comp:file("$<") of error -> halt(1); _ -> halt(0) end.'
-
 %.beam: %.lfe
+	@echo $<
 	@erl $(OPT) -eval 'lfe_comp:file("$<").' -s erlang halt
 	@erl $(OPT) -eval 'lfe_comp:file("$<",[to_exp]).' -s erlang halt
 	@cp $< ../../$*.txt
 
-m.beam: m.erl
-	@erlc  $<
-
 init: lfeimage.beam
 	@erl $(OPT) -eval 'io:format("~p~n",[lfeimage:init()]).' -s erlang halt
+
 start: lfeimage.beam
 	@erl $(OPT) -eval 'io:format("~p~n",[lfeimage:start()]).' -s erlang halt
 
@@ -32,6 +28,7 @@ repl:
 
 clean:
 	@rm -rf $(LFE_BEAM) *.dump err out log *.beam ebin/*.beam esrc/*.lfe Mnesia.nonode@nohost *.expand 
+	@mv *~ typescript /tmp 
 
 check-syntax: 
 	@erl $(OPT) -eval 'code:load_file(sup_comp).'  -eval 'lfe_comp:file("$(CHK_SOURCES)").' -s erlang halt
