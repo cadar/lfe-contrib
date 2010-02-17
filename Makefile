@@ -9,7 +9,7 @@ EBIN_DIRS := $(wildcard deps/*/ebin) ebin ~/lithium/lib/lfe/ebin
 FLAGS     := -noshell -noinput $(INCL_DIRS:%=-I %) $(EBIN_DIRS:%=-pa %) 
 OPT       := {outdir,"ebin"}
  
-compile : $(LFE_BEAM)
+all: $(LFE_BEAM)
  
 ebin/%.beam: src/%.lfe
 	@mkdir -p ebin

@@ -5,7 +5,7 @@ LFE_SRC   := $(wildcard *.lfe)
 LFE_BEAM  := $(LFE_SRC:%.lfe=%.beam)
 LFE_FLY   := $(LFE_SRC:%.lfe=%_flymake.lfe)
 LFE       := ~/lithium/lib/lfe/ebin
-OPT       := -noshell -noinput -pa $(LFE) -pa ./ebin
+OPT       := -pa $(LFE) -pa ./ebin -pa . -noshell -noinput
 
 .PHONY: all start
 
@@ -13,15 +13,12 @@ all: $(LFE_BEAM)
 
 %.beam: %.lfe
 	@echo $<
-	@erl $(OPT) -eval 'lfe_comp:file("$<").' -s erlang halt
+	@erl $(OPT) -eval 'lfe_comp:file("$<",[{outdir,"ebin"}]).' -s erlang halt
 	@erl $(OPT) -eval 'lfe_comp:file("$<",[to_exp]).' -s erlang halt
 	@cp $< ../../$*.txt
 
-init: lfeimage.beam
-	@erl $(OPT) -eval 'io:format("~p~n",[lfeimage:init()]).' -s erlang halt
-
-start: lfeimage.beam
-	@erl $(OPT) -eval 'io:format("~p~n",[lfeimage:start()]).' -s erlang halt
+start: all
+	@erl $(OPT) -eval 'io:format("~p~n",[lfeimage:start_link()]).' -s erlang halt
 
 repl:
 	@erl $(OPT) -s lfe_boot start
