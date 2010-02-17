@@ -79,19 +79,15 @@
 
 (defun testfn (test_fn mod func)
   (let* (((tuple fn ar) func)
-         (doc (apply test_fn 
-                     (list mod fn ar 'true)))
-         (arity (hd doc))
-         (arg (hd (tl doc))))
+         (arg (apply test_fn 
+                     (list mod fn ar 'true))))
     (try
-      (if (== arity ar)
       (case (apply test_fn 
                    (list mod fn ar 'false))
         ('true 
          (tuple '_ok_ arg 'SUCCESS))
         (fail 
-         (tuple 'fail arg (list 'quote fail) )))
-      (tuple 'arity arg (list 'quote 'fail)))
+         (tuple 'fail arg (list 'quote fail))))
       (catch 
         ((tuple m n o) 
          (tuple 'crash arg m))))))

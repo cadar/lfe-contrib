@@ -185,45 +185,57 @@
 ;    (if doc ; return doc-string
 ;      (list '== (cons ': (cons mod1 (cons f '(2 'x2)))) 
 ;              ''(x x))
-;      (let* ((val (call mod1 f 2 'x)) 
-;             (res (== val '(x x)))) 
-;       (if res 
-;           res 
-;           val)))))
-(defun get_perm (args ar out)
+;      (let* ((same_arity (length '(x x)))
+;       (if same_arity
+;           (let* ((val (call mod1 f 2 'x))
+;                  (res (== val '(x x))))
+;                (if res 
+;                    res
+;                    val)
+;           'false)))))
+(defun get_perm (args out)
   (: lists map 
     (lambda (a)
-      (list 'list ''lambda ''(mod1 f ar doc) 
+      (list 'list ''lambda ''(mod1 f fn_arity doc) 
             ; If doc is true return test
             ; description.
             (list 'list ''if ''doc 
                  (list 'quote 
-                 (list 'list ar
                  (list 'list ''==
                  (list 'cons '':
                  (list 'cons 'mod1 
                  (list 'cons 'f 
                  (list 'quote a))))
-                 (list 'quote out))))
+                 (list 'quote out)))
 
          (list 'list ''let* 
           (list 'list 
+           (list 'list ''arity (cons 'list 
+             (cons ''length (add_quote (add_quote (list a))))))
+           (list 'list ''same_arity 
+             (cons 'list (cons ''== (cons ''arity (cons ''fn_arity '()))))))
+          
+        (list 'list ''if ''same_arity
+          (list 'list ''let* 
+           (list 'list 
+
            (list 'list ''val  ; pre-calculate
-            (cons 'list 
-            (cons ''call 
-            (cons ''mod1 
-            (cons ''f (add_quote a))))))
+             (cons 'list 
+             (cons ''call 
+             (cons ''mod1 
+             (cons ''f (add_quote a))))))
            (list 'list ''res 
-            (list 'list ''== ''val
-            (list 'quote out)))) 
-           (list 'list ''if ''res 
-                 ''res 
-                 ''val))))) 
+                 (list 'list ''== ''val
+                       (list 'quote out)))) 
+          (list 'list ''if ''res 
+                   ''res 
+                   ''val))
+         ''false))))) 
      (perms args)))
 (defun ext_list(args out)
    (cons 'list 
          (cons ''list 
-               (get_perm args (length args) out)))))
+               (get_perm args out)))))
 
 (defmacro where 
   (unit `(trans start ,@unit)))
